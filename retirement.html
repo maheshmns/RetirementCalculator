@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Retirement Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #fbc2eb 0%, #6dd5ed 100%);
+        }
+        h1 { text-align: center; margin: 32px 0 14px 0; color: #1a2980; }
+        .navbar {
+            background: linear-gradient(90deg,#1a2980,#26d0ce);
+            display: flex; justify-content: center; align-items: center;
+            padding: 16px 0 10px 0;
+            box-shadow: 0 2px 8px #0001;
+            position: sticky; top: 0; z-index: 5;
+        }
+        .navbtn {
+            padding: 10px 26px; margin: 0 8px;
+            background: #fff; color: #1a2980; border: none; border-radius: 24px;
+            font-size: 1.09em; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px #1a298008;
+        }
+        .navbtn.active, .navbtn:hover {
+            background: #26d0ce; color: #fff;
+        }
+        .hidden { display: none; }
+        .main-card {
+            background: #fff;
+            border-radius: 22px;
+            padding: 36px 28px 28px 28px;
+            margin: 32px auto 18px auto; max-width: 1150px;
+            box-shadow: 0 8px 32px #1a298022;
+        }
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0 38px;
+            margin-bottom: 22px;
+        }
+        .column-block {
+            background: linear-gradient(135deg, #e3fdfd 0%, #fff 100%);
+            border-radius: 18px;
+            padding: 22px 18px 18px 18px;
+            box-shadow: 0 2px 24px #1a298008;
+            margin-bottom: 10px;
+        }
+        .column-block h3 {
+            margin: 0 0 14px 0;
+            font-size: 1.09em;
+            color: #26d0ce;
+            text-align: left;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 3px; font-weight: 600; color: #2d3748; }
+        input[type="number"], input[type="text"], select {
+            width: 100%; padding: 8px 10px; border-radius: 8px;
+            border: 1.5px solid #e2e8f0; font-size: 1em; background: #f1f5f9;
+            transition: border 0.2s;
+            box-sizing: border-box;
+        }
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            border: 2px solid #26d0ce;
+            outline: none;
+            background: #e3fdfd;
+        }
+        .btn, .btn-secondary {
+            padding: 13px 28px; background: linear-gradient(90deg,#1a2980,#26d0ce); color: #fff;
+            border: none; border-radius: 16px; font-size: 1.07em; font-weight: 600;
+            margin: 10px 8px 18px 0; cursor: pointer; box-shadow: 0 2px 8px #1a298022;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+        .btn-secondary {
+            background: linear-gradient(90deg,#36c1ee,#fbc2eb);
+            color: #1a2980;
+        }
+        .btn:disabled, .btn-secondary:disabled { background: #aac7ee; color: #fff;}
+        .results-block { background: #fafaff; border-radius: 16px; box-shadow: 0 2px 16px #26d0ce18; padding: 18px; margin-top: 24px;}
+        .compare-section { background: #fff5; border-radius:14px; margin-top:22px; padding:13px; box-shadow:0 2px 10px #26d0ce18;}
+        .compare-table { margin-top:10px;}
+        .strategy-desc { font-size:0.93em; color:#444; margin-bottom:10px;}
+        .saved { color: #28a745; font-weight: 600;}
+        .expense-table { margin-top: 10px;}
+        th, td { border: none; padding: 7px 8px; font-size: 1em; text-align: right; }
+        th { background: #eaf6ff; color: #1a2980; font-weight: 600; }
+        .expense-table td:first-child, .expense-table th:first-child { text-align: left;}
+        .expense-table tbody tr:nth-child(even) { background: #f6f9fc; }
+        .expense-table tbody tr:nth-child(odd) { background: #fbc2eb33; }
+        .expense-icon { font-size: 1.2em; color: #36c1ee; margin-right: 9px;}
+        .hide-source { display: none; }
+        #customSplitInputs, #rothConversionInput { margin-top: 12px; }
+        #customSplitInputs label, #rothConversionInput label { margin-bottom: 0; }
+        @media (max-width: 1100px) {
+            .main-card { padding: 18px 2vw 18px 2vw; max-width: 99vw; }
+            .calculator-grid { grid-template-columns: repeat(2, 1fr); gap: 0 22px;}
+            .column-block { margin-bottom: 18px;}
+        }
+        @media (max-width: 700px) {
+            .calculator-grid { grid-template-columns: 1fr; gap: 0 0;}
+            .main-card { padding: 8px 1vw; }
+            .btn, .btn-secondary { font-size: 1em; padding: 8px 16px;}
+        }
+    </style>
+</head>
+<body>
+    <h1><i class="fa-solid fa-person-cane"></i> Retirement Calculator</h1>
+    <div class="navbar">
+        <button class="navbtn active" id="nav-calculator-us" onclick="showPage('calculator-us')">
+            <i class="fa-solid fa-dollar-sign"></i> US Calculator
+        </button>
+        <button class="navbtn" id="nav-calculator-india" onclick="showPage('calculator-india')">
+            <i class="fa-solid fa-indian-rupee-sign"></i> India Calculator
+        </button>
+        <button class="navbtn" id="nav-expenses-us" onclick="showPage('expenses-us')">
+            <i class="fa-solid fa-car"></i> US Expenses
+        </button>
+        <button class="navbtn" id="nav-expenses-india" onclick="showPage('expenses-india')">
+            <i class="fa-solid fa-motorcycle"></i> India Expenses
+        </button>
+    </div>
+
+    <!-- US Calculator Page -->
+    <div id="page-calculator-us" class="main-card">
+        <form id="form-calculator-us" autocomplete="off">
+            <div class="calculator-grid">
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-calendar-check"></i> Retirement Need</h3>
+                    <div class="input-group"><label>Current Age</label><input type="number" name="currentAge" min="0" required></div>
+                    <div class="input-group"><label>Retirement Age</label><input type="number" name="retirementAge" min="0" required></div>
+                    <div class="input-group"><label>Years in Retirement</label><input type="number" name="retirementYears" min="0" required></div>
+                    <div class="input-group"><label>Desired Final Balance ($)</label><input type="number" name="finalBalance" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-money-bill-wave"></i> Expenses</h3>
+                    <div class="input-group"><label>Monthly Expenses ($)</label>
+                        <input type="number" name="monthlyExpenses" id="monthlyExpensesInputUS" min="0" required>
+                        <div style="font-size:0.96em;color:#888;margin-top:2px;">
+                            <span id="us-expenses-link" style="cursor:pointer;text-decoration:underline;color:#26d0ce;" onclick="useSavedExpenses('us', 'monthlyExpensesInputUS')">
+                                <i class="fa-solid fa-car"></i> Use US Expenses
+                            </span>
+                        </div>
+                    </div>
+                    <div class="input-group"><label>Annual Travel Budget ($)</label><input type="number" name="travelExpense" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-vault"></i> Assets/Income</h3>
+                    <div class="input-group"><label>Pre-tax ($)</label><input type="number" name="preTaxMoney" min="0" required></div>
+                    <div class="input-group"><label>Post-tax ($)</label><input type="number" name="postTaxMoney" min="0" required></div>
+                    <div class="input-group"><label>Expected Retirement Income ($/yr)</label><input type="number" name="retirementIncome" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-cogs"></i> Misc</h3>
+                    <div class="input-group"><label>Expected Investment Return (%)</label><input type="number" name="investmentReturn" min="0" step="0.01" required></div>
+                    <div class="input-group"><label>Inflation Rate (%)</label><input type="number" name="inflationRate" min="0" step="0.01" required></div>
+                    <div class="input-group">
+                      <label>Withdrawal Strategy</label>
+                      <select name="withdrawalStrategy" id="withdrawalStrategyUS" onchange="handleStrategyChange('us')">
+                        <option value="proportional">Proportional (withdraw from both)</option>
+                        <option value="sequential">Sequential (post-tax first)</option>
+                        <option value="roth">Roth Conversion Ladder</option>
+                        <option value="custom">Custom % split</option>
+                      </select>
+                    </div>
+                    <div class="strategy-desc">
+                      <span id="strategyDescUS">
+                        Proportional: Withdraw from pre-tax and post-tax accounts in proportion to their balances.<br>
+                        Sequential: Withdraw from post-tax first, then pre-tax.<br>
+                        Roth Conversion: Convert a set amount from pre-tax to post-tax (Roth) each year, paying tax.<br>
+                        Custom: Specify % to withdraw from each account.
+                      </span>
+                    </div>
+                    <div class="input-group" id="customSplitInputsUS" style="display:none;">
+                      <label>Withdraw from Pre-tax (%)</label><input type="number" name="customPreTaxPct" min="0" max="100" step="1">
+                      <label>Withdraw from Post-tax (%)</label><input type="number" name="customPostTaxPct" min="0" max="100" step="1">
+                    </div>
+                    <div class="input-group" id="rothConversionInputUS" style="display:none;">
+                      <label>Roth Conversion Amount per Year ($)</label>
+                      <input type="number" name="rothConversionAmt" min="0">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn" onclick="calculateRetirement('us')"><i class="fa-solid fa-chart-line"></i> Calculate</button>
+            <button type="button" class="btn-secondary" onclick="exportTable('us','csv')"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+            <button type="button" class="btn-secondary" onclick="exportTable('us','xlsx')"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+            <button type="button" class="btn-secondary" onclick="clearInputs('us')"><i class="fa-solid fa-eraser"></i> Clear Data</button>
+            <button type="button" class="btn-secondary" onclick="openCompare('us')"><i class="fa-solid fa-chart-bar"></i> Compare Strategies</button>
+        </form>
+        <div id="results-block-us" class="results-block"></div>
+        <div id="compare-block-us" class="compare-section hidden"></div>
+    </div>
+
+    <!-- India Calculator Page -->
+    <div id="page-calculator-india" class="main-card hidden">
+        <form id="form-calculator-india" autocomplete="off">
+            <div class="calculator-grid">
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-calendar-check"></i> Retirement Need</h3>
+                    <div class="input-group"><label>Current Age</label><input type="number" name="currentAge" min="0" required></div>
+                    <div class="input-group"><label>Retirement Age</label><input type="number" name="retirementAge" min="0" required></div>
+                    <div class="input-group"><label>Years in Retirement</label><input type="number" name="retirementYears" min="0" required></div>
+                    <div class="input-group"><label>Desired Final Balance (₹)</label><input type="number" name="finalBalance" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-money-bill-wave"></i> Expenses</h3>
+                    <div class="input-group"><label>Monthly Expenses (₹)</label>
+                        <input type="number" name="monthlyExpenses" id="monthlyExpensesInputIndia" min="0" required>
+                        <div style="font-size:0.96em;color:#888;margin-top:2px;">
+                            <span id="india-expenses-link" style="cursor:pointer;text-decoration:underline;color:#26d0ce;" onclick="useSavedExpenses('india', 'monthlyExpensesInputIndia')">
+                                <i class="fa-solid fa-motorcycle"></i> Use India Expenses
+                            </span>
+                        </div>
+                    </div>
+                    <div class="input-group"><label>Annual Travel Budget (₹)</label><input type="number" name="travelExpense" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-vault"></i> Assets/Income</h3>
+                    <div class="input-group"><label>Pre-tax (₹)</label><input type="number" name="preTaxMoney" min="0" required></div>
+                    <div class="input-group"><label>Post-tax (₹)</label><input type="number" name="postTaxMoney" min="0" required></div>
+                    <div class="input-group"><label>Expected Retirement Income (₹/yr)</label><input type="number" name="retirementIncome" min="0" required></div>
+                </div>
+                <div class="column-block">
+                    <h3><i class="fa-solid fa-cogs"></i> Misc</h3>
+                    <div class="input-group"><label>Expected Investment Return (%)</label><input type="number" name="investmentReturn" min="0" step="0.01" required></div>
+                    <div class="input-group"><label>Inflation Rate (%)</label><input type="number" name="inflationRate" min="0" step="0.01" required></div>
+                    <div class="input-group">
+                      <label>Withdrawal Strategy</label>
+                      <select name="withdrawalStrategy" id="withdrawalStrategyIndia" onchange="handleStrategyChange('india')">
+                        <option value="proportional">Proportional (withdraw from both)</option>
+                        <option value="sequential">Sequential (post-tax first)</option>
+                        <option value="roth">Roth Conversion Ladder</option>
+                        <option value="custom">Custom % split</option>
+                      </select>
+                    </div>
+                    <div class="strategy-desc">
+                      <span id="strategyDescIndia">
+                        Proportional: Withdraw from pre-tax and post-tax accounts in proportion to their balances.<br>
+                        Sequential: Withdraw from post-tax first, then pre-tax.<br>
+                        Roth Conversion: Convert a set amount from pre-tax to post-tax (Roth) each year, paying tax.<br>
+                        Custom: Specify % to withdraw from each account.
+                      </span>
+                    </div>
+                    <div class="input-group" id="customSplitInputsIndia" style="display:none;">
+                      <label>Withdraw from Pre-tax (%)</label><input type="number" name="customPreTaxPct" min="0" max="100" step="1">
+                      <label>Withdraw from Post-tax (%)</label><input type="number" name="customPostTaxPct" min="0" max="100" step="1">
+                    </div>
+                    <div class="input-group" id="rothConversionInputIndia" style="display:none;">
+                      <label>Roth Conversion Amount per Year (₹)</label>
+                      <input type="number" name="rothConversionAmt" min="0">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn" onclick="calculateRetirement('india')"><i class="fa-solid fa-chart-line"></i> Calculate</button>
+            <button type="button" class="btn-secondary" onclick="exportTable('india','csv')"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+            <button type="button" class="btn-secondary" onclick="exportTable('india','xlsx')"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+            <button type="button" class="btn-secondary" onclick="clearInputs('india')"><i class="fa-solid fa-eraser"></i> Clear Data</button>
+            <button type="button" class="btn-secondary" onclick="openCompare('india')"><i class="fa-solid fa-chart-bar"></i> Compare Strategies</button>
+        </form>
+        <div id="results-block-india" class="results-block"></div>
+        <div id="compare-block-india" class="compare-section hidden"></div>
+    </div>
+
+    <!-- US Expenses Page -->
+    <div id="page-expenses-us" class="main-card hidden">
+        <h2><i class="fa-solid fa-car-side"></i> Enter Monthly Expenses (US)</h2>
+        <form id="form-expenses-us">
+            <table class="expense-table" id="monthly-expenses-us">
+                <thead>
+                    <tr><th>Category</th><th>Monthly ($)</th><th>Yearly ($)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="expense-icon fa-solid fa-car"></span>Transportation</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-bolt"></span>Utilities</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-utensils"></span>Food</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-credit-card"></span>Debt</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-file-invoice-dollar"></span>Property Taxes</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-notes-medical"></span>Health Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-house"></span>Housing</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-shield-alt"></span>Insurance</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-film"></span>Entertainment</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-tools"></span>Household Repairs</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-user"></span>Personal Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-key"></span>Rent Payments</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-shirt"></span>Clothing</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-users"></span>HOA</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-home"></span>Home Expenses</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-piggy-bank"></span>Saving</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-graduation-cap"></span>Education</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-masks-theater"></span>Entertainment & Recreation</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-hands-helping"></span>Monthly Donations</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-money-bill-wave"></span>Personal Spending</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-baby"></span>Child & Dependent Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-child"></span>Kids</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-ellipsis-h"></span>Miscellaneous</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-coins"></span>Mortgage Interest</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                </tbody>
+                <tfoot>
+                    <tr><th>Total</th><th id="us-total-monthly"></th><th id="us-total-yearly"></th></tr>
+                </tfoot>
+            </table>
+            <button type="button" class="btn" onclick="saveExpenses('us')"><i class="fa-solid fa-save"></i> Save US Expenses</button>
+        </form>
+        <div id="us-expenses-saved" class="saved"></div>
+    </div>
+
+    <!-- India Expenses Page -->
+    <div id="page-expenses-india" class="main-card hidden">
+        <h2><i class="fa-solid fa-motorcycle"></i> Enter Monthly Expenses (India)</h2>
+        <form id="form-expenses-india">
+            <table class="expense-table" id="monthly-expenses-india">
+                <thead>
+                    <tr><th>Category</th><th>Monthly (₹)</th><th>Yearly (₹)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="expense-icon fa-solid fa-motorcycle"></span>Transportation</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-bolt"></span>Utilities</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-utensils"></span>Food</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-credit-card"></span>Debt</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-file-invoice-dollar"></span>Municipal Taxes</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-notes-medical"></span>Health Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-house"></span>Housing</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-shield-alt"></span>Insurance</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-film"></span>Entertainment</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-tools"></span>Household Repairs</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-user"></span>Personal Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-key"></span>Rent Payments</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-shirt"></span>Clothing</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-users"></span>Maintenance Charges</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-home"></span>Home Expenses</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-piggy-bank"></span>Saving</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-graduation-cap"></span>Education</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-masks-theater"></span>Entertainment & Recreation</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-hands-helping"></span>Monthly Donations</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-money-bill-wave"></span>Personal Spending</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-baby"></span>Child & Dependent Care</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-child"></span>Kids</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-ellipsis-h"></span>Miscellaneous</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                    <tr><td><span class="expense-icon fa-solid fa-coins"></span>Mortgage Interest</td><td><input type="number" min="0" value="0"></td><td class="yearly"></td></tr>
+                </tbody>
+                <tfoot>
+                    <tr><th>Total</th><th id="india-total-monthly"></th><th id="india-total-yearly"></th></tr>
+                </tfoot>
+            </table>
+            <button type="button" class="btn" onclick="saveExpenses('india')"><i class="fa-solid fa-save"></i> Save India Expenses</button>
+        </form>
+        <div id="india-expenses-saved" class="saved"></div>
+    </div>
+
+    <div class="footer-note">
+        <i class="fa-solid fa-info-circle"></i> This calculator provides a simplified amortization of retirement assets. For more accurate planning, consult a financial advisor.
+    </div>
+    <div class="hide-source"><!-- Source code hidden --></div>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+    // Navigation
+    function showPage(page) {
+        document.getElementById('page-expenses-us').classList.add('hidden');
+        document.getElementById('page-expenses-india').classList.add('hidden');
+        document.getElementById('page-calculator-us').classList.add('hidden');
+        document.getElementById('page-calculator-india').classList.add('hidden');
+        document.getElementById('nav-expenses-us').classList.remove('active');
+        document.getElementById('nav-expenses-india').classList.remove('active');
+        document.getElementById('nav-calculator-us').classList.remove('active');
+        document.getElementById('nav-calculator-india').classList.remove('active');
+        document.getElementById('page-' + page).classList.remove('hidden');
+        document.getElementById('nav-' + page).classList.add('active');
+    }
+
+    function setupExpenseTable(tableId, monthlyTotalId, yearlyTotalId) {
+        const table = document.getElementById(tableId);
+        function updateTotals() {
+            let monthlyTotal = 0;
+            let yearlyTotal = 0;
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const monthlyInput = row.querySelector('td:nth-child(2) input');
+                const yearlyCell = row.querySelector('td.yearly');
+                const monthly = parseFloat(monthlyInput.value) || 0;
+                const yearly = monthly * 12;
+                yearlyCell.textContent = yearly.toLocaleString();
+                monthlyTotal += monthly;
+                yearlyTotal += yearly;
+            });
+            document.getElementById(monthlyTotalId).textContent = monthlyTotal.toLocaleString();
+            document.getElementById(yearlyTotalId).textContent = yearlyTotal.toLocaleString();
+        }
+        table.querySelectorAll('tbody input').forEach(input => {
+            input.addEventListener('input', updateTotals);
+        });
+        updateTotals();
+    }
+    setupExpenseTable('monthly-expenses-us', 'us-total-monthly', 'us-total-yearly');
+    setupExpenseTable('monthly-expenses-india', 'india-total-monthly', 'india-total-yearly');
+
+    function saveExpenses(country) {
+        let tableId = country === 'us' ? 'monthly-expenses-us' : 'monthly-expenses-india';
+        let yearlyTotalId = country === 'us' ? 'us-total-yearly' : 'india-total-yearly';
+        let expenses = parseFloat(document.getElementById(yearlyTotalId).textContent.replace(/,/g, "")) || 0;
+        localStorage.setItem(country + 'Expenses', expenses);
+        document.getElementById(country + '-expenses-saved').textContent = "Expenses saved!";
+        setTimeout(() => {document.getElementById(country + '-expenses-saved').textContent = "";}, 1500);
+    }
+
+    function useSavedExpenses(country, inputId) {
+        let expenses = localStorage.getItem(country + 'Expenses') || 0;
+        if (expenses > 0) {
+            document.getElementById(inputId).value = Math.round(expenses / 12);
+        }
+        showPage('calculator-' + country);
+    }
+
+    // Withdrawal strategy UI logic
+    function handleStrategyChange(country) {
+      let val = document.getElementById(country === 'us' ? 'withdrawalStrategyUS' : 'withdrawalStrategyIndia').value;
+      document.getElementById('customSplitInputs' + (country === 'us' ? 'US' : 'India')).style.display = (val === 'custom') ? '' : 'none';
+      document.getElementById('rothConversionInput' + (country === 'us' ? 'US' : 'India')).style.display = (val === 'roth') ? '' : 'none';
+    }
+
+    // US tax brackets (2025)
+    function getUsTax(income) {
+        let brackets = [
+            {limit: 11600, rate: 0.10},
+            {limit: 47150, rate: 0.12},
+            {limit: 100525, rate: 0.22},
+            {limit: 191950, rate: 0.24},
+            {limit: 243725, rate: 0.32},
+            {limit: 609350, rate: 0.35},
+            {limit: Infinity, rate: 0.37}
+        ];
+        let tax = 0, prevLimit = 0;
+        for (let i = 0; i < brackets.length; i++) {
+            let {limit, rate} = brackets[i];
+            if (income > limit) {
+                tax += (limit-prevLimit)*rate;
+                prevLimit = limit;
+            } else {
+                tax += (income-prevLimit)*rate;
+                break;
+            }
+        }
+        return tax;
+    }
+    // India tax slabs (2024-25 new regime)
+    function getIndiaTax(income) {
+        let slabs = [
+            {limit: 300000, rate: 0},
+            {limit: 600000, rate: 0.05},
+            {limit: 900000, rate: 0.10},
+            {limit: 1200000, rate: 0.15},
+            {limit: 1500000, rate: 0.20},
+            {limit: Infinity, rate: 0.30}
+        ];
+        let tax = 0, prevLimit = 0;
+        for (let i = 0; i < slabs.length; i++) {
+            let {limit, rate} = slabs[i];
+            if (income > limit) {
+                tax += (limit-prevLimit)*rate;
+                prevLimit = limit;
+            } else {
+                tax += (income-prevLimit)*rate;
+                break;
+            }
+        }
+        return tax;
+    }
+
+    // Main amortization logic with withdrawal strategies
+    let amortizationResults = {us: null, india: null}; // store latest results for export
+
+    function calculateRetirement(country, strategyOverride=null) {
+        const form = document.getElementById('form-calculator-' + country);
+        const getValue = name => parseFloat(form.elements[name].value) || 0;
+        const getStrategy = () => strategyOverride || form.elements['withdrawalStrategy'].value;
+
+        const currentAge = getValue('currentAge');
+        const retirementAge = getValue('retirementAge');
+        const yearsInRetirement = getValue('retirementYears');
+        const desiredFinalBalance = getValue('finalBalance');
+        const monthlyExpenses = getValue('monthlyExpenses');
+        const travelExpense = getValue('travelExpense');
+        let preTaxMoney = getValue('preTaxMoney');
+        let postTaxMoney = getValue('postTaxMoney');
+        const retirementIncome = getValue('retirementIncome');
+        const inflationRate = getValue('inflationRate') / 100;
+        const investmentReturn = getValue('investmentReturn') / 100;
+        const withdrawalStrategy = getStrategy();
+        const customPreTaxPct = getValue('customPreTaxPct');
+        const customPostTaxPct = getValue('customPostTaxPct');
+        const rothConversionAmt = getValue('rothConversionAmt');
+
+        let results = [];
+        let year = 1;
+        let age = retirementAge;
+        let expenses = (monthlyExpenses * 12) + travelExpense;
+        let preTax = preTaxMoney;
+        let postTax = postTaxMoney;
+        let roth = 0; // for Roth conversion
+
+        for (let i = 0; i < yearsInRetirement; i++) {
+            let startPreTax = preTax;
+            let startPostTax = postTax;
+            let startRoth = roth;
+            let expensesInflated = expenses * Math.pow(1 + inflationRate, i);
+            let totalWithdrawalNeeded = Math.max(0, expensesInflated - retirementIncome);
+
+            let preTaxWithdrawal = 0, postTaxWithdrawal = 0, rothConversion = 0, rothConvertedThisYear = 0;
+
+            // --- STRATEGY LOGIC ---
+            if (withdrawalStrategy === 'proportional') {
+                let total = startPreTax + startPostTax;
+                preTaxWithdrawal = total > 0 ? totalWithdrawalNeeded * (startPreTax / total) : 0;
+                postTaxWithdrawal = total > 0 ? totalWithdrawalNeeded * (startPostTax / total) : 0;
+            } else if (withdrawalStrategy === 'sequential') {
+                if (startPostTax >= totalWithdrawalNeeded) {
+                    postTaxWithdrawal = totalWithdrawalNeeded;
+                    preTaxWithdrawal = 0;
+                } else {
+                    postTaxWithdrawal = startPostTax;
+                    preTaxWithdrawal = totalWithdrawalNeeded - startPostTax;
+                }
+            } else if (withdrawalStrategy === 'roth') {
+                // Roth Conversion at start of year (user input, or 10% of pre-tax if blank)
+                rothConversion = rothConversionAmt > 0 ? Math.min(rothConversionAmt, startPreTax) : Math.min(startPreTax, Math.max(0, startPreTax * 0.10));
+                rothConvertedThisYear = rothConversion;
+                // Pay tax on conversion, add to Roth (post-tax)
+                let rothTax = country === "us" ? getUsTax(rothConversion) : getIndiaTax(rothConversion);
+                preTaxWithdrawal = 0; // withdrawal for expenses handled below
+                postTaxWithdrawal = 0;
+                preTax -= rothConversion;
+                roth += (rothConversion - rothTax);
+
+                // For withdrawal, use sequential: Roth (post-tax) -> pre-tax
+                if (roth >= totalWithdrawalNeeded) {
+                    postTaxWithdrawal = totalWithdrawalNeeded; // from Roth
+                    preTaxWithdrawal = 0;
+                    roth -= postTaxWithdrawal;
+                } else {
+                    postTaxWithdrawal = roth;
+                    preTaxWithdrawal = totalWithdrawalNeeded - roth;
+                    roth = 0;
+                    preTax -= preTaxWithdrawal;
+                }
+            } else if (withdrawalStrategy === 'custom') {
+                let totalPct = customPreTaxPct + customPostTaxPct;
+                if (totalPct === 0) {
+                    preTaxWithdrawal = 0; postTaxWithdrawal = 0;
+                } else {
+                    preTaxWithdrawal = totalWithdrawalNeeded * (customPreTaxPct / totalPct);
+                    postTaxWithdrawal = totalWithdrawalNeeded * (customPostTaxPct / totalPct);
+                }
+            }
+
+            // For non-roth, update balances for withdrawals
+            if (withdrawalStrategy !== 'roth') {
+                preTax -= preTaxWithdrawal;
+                postTax -= postTaxWithdrawal;
+            }
+
+            // Investment returns on remaining assets
+            let preTaxInvestmentIncome = Math.max(0, preTax) * investmentReturn;
+            let postTaxInvestmentIncome = Math.max(0, postTax) * investmentReturn;
+            let rothInvestmentIncome = Math.max(0, roth) * investmentReturn;
+
+            // Add investment returns
+            preTax += preTaxInvestmentIncome;
+            postTax += postTaxInvestmentIncome;
+            roth += rothInvestmentIncome;
+
+            // Add retirement income to post-tax
+            postTax += retirementIncome;
+
+            // Taxable income for the year
+            let yearlyTaxableIncome;
+            if (withdrawalStrategy === "roth") {
+                yearlyTaxableIncome = retirementIncome + preTaxWithdrawal + postTaxWithdrawal + preTaxInvestmentIncome + postTaxInvestmentIncome + rothConvertedThisYear;
+            } else {
+                yearlyTaxableIncome = retirementIncome + preTaxWithdrawal + postTaxWithdrawal + preTaxInvestmentIncome + postTaxInvestmentIncome;
+            }
+            let taxForYear = country === "us" ? getUsTax(yearlyTaxableIncome) : getIndiaTax(yearlyTaxableIncome);
+
+            // Deduct tax from assets, proportionally from post-tax and pre-tax assets
+            let totalAssetsForTax = preTax + postTax + roth;
+            let taxFromPreTax = totalAssetsForTax > 0 ? taxForYear * (preTax / totalAssetsForTax) : 0;
+            let taxFromPostTax = totalAssetsForTax > 0 ? taxForYear * (postTax / totalAssetsForTax) : 0;
+            let taxFromRoth = totalAssetsForTax > 0 ? taxForYear * (roth / totalAssetsForTax) : 0;
+
+            preTax -= taxFromPreTax;
+            postTax -= taxFromPostTax;
+            roth -= taxFromRoth;
+
+            results.push({
+                year: year,
+                age: age,
+                startPreTax: startPreTax,
+                startPostTax: startPostTax,
+                startRoth: startRoth,
+                expenses: expensesInflated,
+                income: retirementIncome,
+                preTaxWithdrawal: preTaxWithdrawal,
+                postTaxWithdrawal: postTaxWithdrawal,
+                rothConverted: rothConvertedThisYear,
+                preTaxInvestmentIncome: preTaxInvestmentIncome,
+                postTaxInvestmentIncome: postTaxInvestmentIncome,
+                rothInvestmentIncome: rothInvestmentIncome,
+                taxForYear: taxForYear,
+                endPreTax: preTax,
+                endPostTax: postTax,
+                endRoth: roth,
+                totalEndAssets: preTax + postTax + roth
+            });
+
+            year++;
+            age++;
+        }
+
+        amortizationResults[country] = results;
+
+        let output = `<h2><i class="fa-solid fa-table"></i> Amortization Chart</h2>
+        <div style="overflow-x:auto;"><table id="table-amortize-${country}"><thead>
+            <tr>
+                <th>Year</th><th>Age</th>
+                <th>Start Pre-tax</th><th>Start Post-tax</th><th>Start Roth</th>
+                <th>Income</th>
+                <th>Expenses</th>
+                <th>Pre-tax Withdrawal</th><th>Post-tax Withdrawal</th><th>Roth Converted</th>
+                <th>Pre-tax Invest. Income</th><th>Post-tax Invest. Income</th><th>Roth Invest. Income</th>
+                <th>Tax</th>
+                <th>End Pre-tax</th><th>End Post-tax</th><th>End Roth</th>
+                <th>Total End Assets</th>
+            </tr></thead><tbody>`;
+        results.forEach(r => {
+            output += `<tr>
+                <td>${r.year}</td>
+                <td>${r.age}</td>
+                <td>${r.startPreTax.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.startPostTax.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.startRoth.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.income.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.expenses.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.preTaxWithdrawal.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.postTaxWithdrawal.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.rothConverted.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.preTaxInvestmentIncome.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.postTaxInvestmentIncome.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.rothInvestmentIncome.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.taxForYear.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.endPreTax.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.endPostTax.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td>${r.endRoth.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                <td style="font-weight:bold">${r.totalEndAssets.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+            </tr>`;
+        });
+        output += `</tbody></table></div>`;
+        let last = results[results.length-1];
+        output += `<div style="margin-top:16px;font-size:1.1em"><strong>Desired Final Balance:</strong> ${desiredFinalBalance.toLocaleString()}<br>`;
+        output += `<strong>Actual Final Balance:</strong> ${last.totalEndAssets.toLocaleString(undefined,{maximumFractionDigits:0})}` +
+            (last.totalEndAssets >= desiredFinalBalance ? " <span style='color:green;'>✅</span>" : " <span style='color:red;'>❌</span>") + `</div>`;
+        document.getElementById('results-block-' + country).innerHTML = output;
+        document.getElementById('compare-block-' + country).classList.add('hidden');
+    }
+
+    // Export Amortization Table as CSV or Excel (xlsx)
+    function exportTable(country, format) {
+        let table = document.getElementById('table-amortize-' + country);
+        if (!table) { alert("Please calculate first!"); return; }
+        let rows = Array.from(table.rows);
+        let data = rows.map(row => Array.from(row.cells).map(cell => cell.innerText));
+        if (format === 'csv') {
+            let csv = data.map(r => r.join(",")).join("\r\n");
+            let blob = new Blob([csv], {type: "text/csv"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `amortization_${country}_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else if (format === 'xlsx') {
+            let ws = XLSX.utils.aoa_to_sheet(data);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Amortization");
+            XLSX.writeFile(wb, `amortization_${country}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+    }
+
+    // Clear all inputs for calculator
+    function clearInputs(country) {
+        let form = document.getElementById('form-calculator-' + country);
+        Array.from(form.elements).forEach(el => {
+            if (el.type === 'number' || el.tagName === 'SELECT') el.value = '';
+        });
+        document.getElementById('results-block-' + country).innerHTML = '';
+        document.getElementById('compare-block-' + country).classList.add('hidden');
+    }
+
+    // Compare strategies (run all, show summary)
+    function openCompare(country) {
+        let strategies = [
+            {key: 'proportional', label: 'Proportional'},
+            {key: 'sequential', label: 'Sequential'},
+            {key: 'roth', label: 'Roth Conversion'},
+            {key: 'custom', label: 'Custom % split'}
+        ];
+        let form = document.getElementById('form-calculator-' + country);
+        if (!form.elements['currentAge'].value) { alert("Please enter the calculator inputs first."); return; }
+        let compareRows = [];
+        strategies.forEach(strategy => {
+            if (strategy.key === 'custom') {
+                // Use whatever custom % is in the form, or skip if blank
+                let customPre = parseFloat(form.elements['customPreTaxPct'].value);
+                let customPost = parseFloat(form.elements['customPostTaxPct'].value);
+                if (!(customPre || customPost)) return;
+            }
+            calculateRetirement(country, strategy.key);
+            let results = amortizationResults[country];
+            let last = results[results.length-1];
+            let exhaustedYear = results.find(r => r.totalEndAssets < 1);
+            compareRows.push([
+                strategy.label,
+                last.totalEndAssets.toLocaleString(undefined,{maximumFractionDigits:0}),
+                exhaustedYear ? exhaustedYear.year : results.length,
+                exhaustedYear ? "❌" : "✅"
+            ]);
+        });
+        // Restore last selected strategy
+        calculateRetirement(country);
+
+        let output = `<h3>Compare Withdrawal Strategies</h3>
+        <table class="compare-table"><thead><tr>
+            <th>Strategy</th><th>Final Balance</th><th>Years Lasted</th><th>Success</th>
+        </tr></thead><tbody>`;
+        compareRows.forEach(row => {
+            output += `<tr>
+                <td>${row[0]}</td>
+                <td>${row[1]}</td>
+                <td>${row[2]}</td>
+                <td>${row[3]}</td>
+            </tr>`;
+        });
+        output += `</tbody></table>`;
+        document.getElementById('compare-block-' + country).innerHTML = output;
+        document.getElementById('compare-block-' + country).classList.remove('hidden');
+    }
+
+    // Show US calculator first
+    showPage('calculator-us');
+    </script>
+</body>
+</html>
