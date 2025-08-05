@@ -16,7 +16,7 @@
         h1 { text-align: center; margin: 32px 0 14px 0; color: #1a2980; }
         .navbar {
             background: linear-gradient(90deg,#1a2980,#26d0ce);
-            display: flex; justify-content: center; align-items: center;
+            display: flex; justify-content: center; alig/n-items: center;
             padding: 16px 0 10px 0;
             box-shadow: 0 2px 8px #0001;
             position: sticky; top: 0; z-index: 5;
@@ -578,24 +578,25 @@
             // Add retirement income to post-tax
             postTax += retirementIncome;
 
-            // Taxable income for the year
-            let yearlyTaxableIncome;
+            // Calculate taxable income
+            let taxableIncome = 0;
             if (withdrawalStrategy === "roth") {
-                yearlyTaxableIncome = retirementIncome + preTaxWithdrawal + postTaxWithdrawal + preTaxInvestmentIncome + postTaxInvestmentIncome + rothConvertedThisYear;
+                taxableIncome = rothConvertedThisYear + preTaxWithdrawal + (retirementIncome || 0);
             } else {
-                yearlyTaxableIncome = retirementIncome + preTaxWithdrawal + postTaxWithdrawal + preTaxInvestmentIncome + postTaxInvestmentIncome;
+                taxableIncome = preTaxWithdrawal + (retirementIncome || 0);
             }
-            let taxForYear = country === "us" ? getUsTax(yearlyTaxableIncome) : getIndiaTax(yearlyTaxableIncome);
 
-            // Deduct tax from assets, proportionally from post-tax and pre-tax assets
-            let totalAssetsForTax = preTax + postTax + roth;
-            let taxFromPreTax = totalAssetsForTax > 0 ? taxForYear * (preTax / totalAssetsForTax) : 0;
-            let taxFromPostTax = totalAssetsForTax > 0 ? taxForYear * (postTax / totalAssetsForTax) : 0;
-            let taxFromRoth = totalAssetsForTax > 0 ? taxForYear * (roth / totalAssetsForTax) : 0;
+            // Calculate tax
+            let taxForYear = country === "us" ? getUsTax(taxableIncome) : getIndiaTax(taxableIncome);
 
-            preTax -= taxFromPreTax;
-            postTax -= taxFromPostTax;
-            roth -= taxFromRoth;
+            // Deduct tax from pre-tax assets (or post-tax if pre-tax exhausted)
+            if (preTax >= taxForYear) {
+                preTax -= taxForYear;
+            } else {
+                let remainder = taxForYear - preTax;
+                preTax = 0;
+                postTax -= remainder; // if needed, take remainder from post-tax
+            }
 
             results.push({
                 year: year,
