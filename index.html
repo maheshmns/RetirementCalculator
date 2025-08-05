@@ -578,25 +578,36 @@
             // Add retirement income to post-tax
             postTax += retirementIncome;
 
-            // Calculate taxable income
-            let taxableIncome = 0;
+            // Capital gains tax rate (adjust for country if needed)
+            const capGainsRate = country === "us" ? 0.15 : 0.10;
+
+            // Only add Roth investment income if withdrawal strategy is "roth"
+            let rothInvestmentIncome = 0;
             if (withdrawalStrategy === "roth") {
-                taxableIncome = rothConvertedThisYear + preTaxWithdrawal + (retirementIncome || 0);
-            } else {
-                taxableIncome = preTaxWithdrawal + (retirementIncome || 0);
+                rothInvestmentIncome = Math.max(0, roth) * investmentReturn;
+                roth += rothInvestmentIncome;
             }
 
-            // Calculate tax
+            // Calculate taxable income (ordinary income)
+            let taxableIncome = preTaxWithdrawal + (withdrawalStrategy === "roth" ? rothConvertedThisYear : 0) + (retirementIncome || 0);
+
+            // Calculate ordinary tax
             let taxForYear = country === "us" ? getUsTax(taxableIncome) : getIndiaTax(taxableIncome);
 
-            // Deduct tax from pre-tax assets (or post-tax if pre-tax exhausted)
+            // Calculate capital gains tax on post-tax investment income
+            let capGainsTax = postTaxInvestmentIncome * capGainsRate;
+
+            // Deduct ordinary tax from pre-tax assets first, then post-tax if needed
             if (preTax >= taxForYear) {
                 preTax -= taxForYear;
             } else {
                 let remainder = taxForYear - preTax;
                 preTax = 0;
-                postTax -= remainder; // if needed, take remainder from post-tax
+                postTax -= remainder;
             }
+
+            // Deduct capital gains tax from post-tax assets
+            postTax -= capGainsTax;
 
             results.push({
                 year: year,
