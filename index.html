@@ -568,22 +568,25 @@
             // Investment returns on remaining assets
             let preTaxInvestmentIncome = Math.max(0, preTax) * investmentReturn;
             let postTaxInvestmentIncome = Math.max(0, postTax) * investmentReturn;
-            let rothInvestmentIncome = 0;
-
-            if (withdrawalStrategy === "roth") {
-                rothInvestmentIncome = Math.max(0, roth) * investmentReturn;
-                roth += rothInvestmentIncome;
-            }
+            let rothInvestmentIncome = Math.max(0, roth) * investmentReturn;
 
             // Add investment returns
             preTax += preTaxInvestmentIncome;
             postTax += postTaxInvestmentIncome;
+            roth += rothInvestmentIncome;
 
             // Add retirement income to post-tax
             postTax += retirementIncome;
 
             // Capital gains tax rate (adjust for country if needed)
             const capGainsRate = country === "us" ? 0.15 : 0.10;
+
+            // Only add Roth investment income if withdrawal strategy is "roth"
+            let rothInvestmentIncome = 0;
+            if (withdrawalStrategy === "roth") {
+                rothInvestmentIncome = Math.max(0, roth) * investmentReturn;
+                roth += rothInvestmentIncome;
+            }
 
             // Calculate taxable income (ordinary income)
             let taxableIncome = preTaxWithdrawal + (withdrawalStrategy === "roth" ? rothConvertedThisYear : 0) + (retirementIncome || 0);
